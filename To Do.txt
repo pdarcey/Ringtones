@@ -1,0 +1,6 @@
+Get list of names
+Set default messages: ringtone & message
+Generate voice files: ringtone & message
+Set base sounds: ringtone & message
+Combine base sound with each voice file -> ringtone file (ringtone & message)
+End
