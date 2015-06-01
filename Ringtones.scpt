@@ -26,7 +26,8 @@ end run
 on setProgramDefaults()
 	set defaultRingtoneMessage to "It's #NAME calling"
 	set defaultiMessageMessage to "You've got a message from #NAME"
-	set defaultScript to "say -v #VOICE -o #FILENAME.aiff \"#MESSAGE\""
+	set defaultFolder to "$HOME/Desktop/"
+	set defaultScript to "say -v #VOICE -o " & defaultFolder & "#FILENAME.aiff \"#MESSAGE\""
 	set defaultVoice to "Karen"
 end setProgramDefaults
 
@@ -121,7 +122,7 @@ on generateVoiceFiles()
 		set theScript to replace_chars(theScript, "#FILENAME", item i of nameList & "_message")
 		set theScript to replace_chars(theScript, "#MESSAGE", thisMessage)
 	
-		do shell script theScript	
+		do shell script theScript
 	end repeat
 end generateVoiceFiles
 
@@ -139,3 +140,12 @@ end combineBaseMessageToneWithMessageVoiceFiles
 
 on addToiTunes()
 end addToiTunes
+
+on replace_chars(this_text, search_string, replacement_string)
+	set AppleScript's text item delimiters to the search_string
+	set the item_list to every text item of this_text
+	set AppleScript's text item delimiters to the replacement_string
+	set this_text to the item_list as string
+	set AppleScript's text item delimiters to ""
+	return this_text
+end replace_chars
