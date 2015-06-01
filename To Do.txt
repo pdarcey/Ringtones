@@ -1,7 +1,0 @@
-Select a group from Contacts (if no group, use all contacts). Use Nickname or Phonetic First/LastName, else First + Last name
-Set default messages: ringtone & message e.g. "You've got a message from %NAME%"; "It's %NAME% calling"
-Generate voice files: ringtone & message e.g. say -v Karen -o Aleem_message.aiff "You've got a message from Aleem"
-Set base sounds: ringtone & message
-Combine base sound with each voice file -> ringtone file (ringtone & message)
-Add to iTunes
-End
