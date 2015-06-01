@@ -1,10 +1,10 @@
 (*
-Select a group from Contacts (if no group, use all contacts). Use Nickname or Phonetic First/LastName, else First & Last name
-Set default messages: ringtone & message e.g. "You've got a message from %NAME%"; "It's %NAME% calling"
-Generate voice files: ringtone & message e.g. say -v Karen -o Aleem_message.aiff "You've got a message from Aleem"
-Set base sounds: ringtone & message
-Combine base sound with each voice file -> ringtone file (ringtone & message)
-Add to iTunes
+Script to generate individual ringtones and message tones for contacts
+
+Note: The important parts - the bits that actually combine two sound files and output them as ringtone files - were originally done by a contributor named Frederico at Mac OS X Hints (http://hints.macworld.com/article.php?story=20090624142606298), but I don't have the original files to attribute it better, and the links at that page no longer work. Sorry!
+
+© 2015 Paul Darcey, All rights reserved
+Licence 
 *)
 
 property extension_list : {"m4r"} -- Used to filter files to show when selecting base ringtone/messages file
@@ -216,6 +216,9 @@ on combineBaseWithVoiceFiles(baseFile, voiceFile)
 			select none -- so the file is reset properly for export and to prevent arbitrary system event overwrite
 		end tell
 		set voiceDocument to open voiceFile -- open the spoken name file we created
+--		
+-- To Do: fix output path so files end up in Ringtones folder in iTunes
+-- 		
 		set outputPath to POSIX path of voiceFile & ".m4r" -- this is the magic trick to turn regular AAC/MPEG4 into a ringtone
 		tell voiceDocument -- our spoken name file
 			select none -- avoids occasional unknown source error
