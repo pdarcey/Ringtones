@@ -7,6 +7,8 @@ Combine base sound with each voice file -> ringtone file (ringtone & message)
 Add to iTunes
 *)
 
+property extension_list : {"m4r"} -- Used to filter files to show when selecting base ringtone/messages file
+
 on run
 	setProgramDefaults
 	getContactNames
@@ -29,6 +31,12 @@ on setProgramDefaults()
 	set defaultFolder to "$HOME/Desktop/"
 	set defaultScript to "say -v #VOICE -o " & defaultFolder & "#FILENAME.aiff \"#MESSAGE\""
 	set defaultVoice to "Karen"
+	set appPath to path to me
+	tell application "Finder"
+		set parentPath to (container of appPath) as alias
+	end tell
+	set defaultRingtoneFileName to "Base_Ringtone.m4r"
+	set defaultMessageFileName to "Base_Message.m4r"
 end setProgramDefaults
 
 (*
@@ -127,9 +135,23 @@ on generateVoiceFiles()
 end generateVoiceFiles
 
 on setBaseRingtone()
+try
+	set chosenBaseRingtone to choose file with prompt "Choose an audio file to use as your base Ringtone:" of type extension_list without multiple selections allowed
+on error
+	tell application "Finder"
+		set chosenBaseRingtone to (file defaultRingtoneFileName of parentPath) as alias
+	end tell
+end try
 end setBaseRingtone
 
 on setBaseMessageTone()
+try
+	set chosenBaseMessage to choose file with prompt "Choose an audio file to use as your base Message notification:" of type extension_list without multiple selections allowed
+on error
+	tell application "Finder"
+		set chosenBaseMessage to (file defaultMessageFileName of parentPath) as alias
+	end tell
+end try
 end setBaseMessageTone
 
 on combineBaseRingtoneWithRingtoneVoiceFiles()
