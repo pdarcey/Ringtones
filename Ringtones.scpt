@@ -10,14 +10,40 @@ Add to iTunes
 property extension_list : {"m4r"} -- Used to filter files to show when selecting base ringtone/messages file
 
 on run
-	setProgramDefaults
-	getContactNames
-	setBaseRingtone
-	setBaseMessageTone
-	setDefaultRingtoneMessage
-	setDefaultiMessageMessage
-	generateVoiceFiles
-	cleanup
+	(*
+	This is where we store the defaults used by the program
+*)
+	set defaultRingtoneMessage to "It's #NAME calling"
+	set defaultiMessageMessage to "You've got a message from #NAME"
+	set pathToTemp to POSIX path of (path to temporary items folder)
+	set defaultFolder to pathToTemp -- alternative: "$HOME/Desktop/"
+	set defaultScript to "say -v #VOICE -o " & defaultFolder & "#FILENAME.aiff \"#MESSAGE\""
+	set defaultVoice to "Karen"
+	(* Karen is the voice of Austrlian Siri; that's why I made it my default
+	   Samantha is the voice of American Siri
+	   The British male voice is Daniel
+	   I don't know the other countries’ names.
+	   All these voices can be downloaded from Apple. 
+	   On your Mac, go to System Preferences -> Dicatation & Speech -> Text to Speech. In the System Voice dropdown,
+	   select Customise, and you'll see all the voices available for download.
+	*)
+	set PathToRingtones to "/" & (do shell script "grep '>Music Folder<' \"$HOME/Music/iTunes/iTunes Music Library.xml\" | cut -d/ -f5- |   cut -d\\< -f1 | sed 's/%20/ /g'") & "Tones/" -- get iTunes Library folder	   
+	set appPath to path to me
+	tell application "Finder"
+		set parentPath to (container of appPath) as alias
+	end tell
+	set defaultRingtoneFileName to "Base_Ringtone.m4r"
+	set defaultMessageFileName to "Base_Message.m4r"
+	
+	set chosenLists to my getContactNames()
+	set nameList to item 1 of chosenLists
+	set phoneticList to item 2 of chosenLists
+	set chosenBaseRingtone to my setBaseRingtone()
+	set chosenBaseMessage to my setBaseMessageTone()
+	set ringtoneMessage to my setDefaultRingtoneMessage(defaultRingtoneMessage)
+	set iMessageMessage to my setDefaultiMessageMessage(defaultiMessageMessage)
+	my generateVoiceFiles(nameList, phoneticList, ringtoneMessage, iMessageMessage, defaultFolder, defaultScript, defaultVoice, chosenBaseRingtone, chosenBaseMessage)
+	my cleanup()
 end run
 
 (*
@@ -26,8 +52,8 @@ end run
 on setProgramDefaults()
 	set defaultRingtoneMessage to "It's #NAME calling"
 	set defaultiMessageMessage to "You've got a message from #NAME"
-	set pathToTemp to POSIX path of (path to temporary items folder) 
-	set defaultFolder to  pathToTemp -- alternative: "$HOME/Desktop/"
+	set pathToTemp to POSIX path of (path to temporary items folder)
+	set defaultFolder to pathToTemp -- alternative: "$HOME/Desktop/"
 	set defaultScript to "say -v #VOICE -o " & defaultFolder & "#FILENAME.aiff \"#MESSAGE\""
 	set defaultVoice to "Karen"
 	(* Karen is the voice of Austrlian Siri; that's why I made it my default
@@ -81,10 +107,10 @@ on getContactNames()
 					else
 						set firstName to ""
 						set lastName to ""
-						if first name is not misssing value then
+						if first name is not missing value then
 							set firstName to first name
 						end if
-						if last name is not misssing value then
+						if last name is not missing value then
 							set lastName to last name
 						end if
 						set theName to first name & last name
@@ -104,67 +130,77 @@ on getContactNames()
 		get nameList
 		get phoneticList
 	end tell
+	
+	return {nameList, phoneticList}
 end getContactNames
 
-on setDefaultRingtoneMessage()
+on setDefaultRingtoneMessage(defaultRingtoneMessage)
 	display dialog "Enter your ringtone message:" default answer defaultRingtoneMessage
-	set ringtoneMessage to the text returned of the result
+	
+	return the text returned of the result
 end setDefaultRingtoneMessage
 
-on setDefaultiMessageMessage()
+on setDefaultiMessageMessage(defaultiMessageMessage)
 	display dialog "Enter your iMessage message:" default answer defaultiMessageMessage
-	set iMessageMessage to the text returned of the result
+	
+	return the text returned of the result
 end setDefaultiMessageMessage
 
-on generateVoiceFiles()
+on generateVoiceFiles(nameList, phoneticList, defaultRingtoneMessage, defaultiMessageMessage, defaultFolder, defaultScript, defaultVoice, chosenBaseRingtone, chosenBaseMessage)
 	repeat with i from 1 to the count of nameList
 		-- Ringtone
 		set thisMessage to defaultRingtoneMessage
 		set thisMessage to replace_chars(thisMessage, "#NAME", item i of phoneticList)
-	
-		set theFileName to defaultFolder & item i of nameList & "_ringtone"
+		
+		set theFileName to item i of nameList & "_ringtone"
 		set theScript to defaultScript
 		set theScript to replace_chars(theScript, "#VOICE", defaultVoice)
 		set theScript to replace_chars(theScript, "#FILENAME", theFileName)
 		set theScript to replace_chars(theScript, "#MESSAGE", thisMessage)
-	
-		do shell script theScript								-- Generates the voice file
-		combineBaseWithVoiceFiles(chosenBaseRingtone, theFileName)	-- Generates the ringtone
-	
+		
+		do shell script theScript -- Generates the voice file
+		set theVoiceFile to POSIX file (defaultFolder & theFileName & ".aiff") as alias
+		combineBaseWithVoiceFiles(chosenBaseRingtone, theVoiceFile) -- Generates the ringtone
+		
 		-- Message
 		set thisMessage to defaultiMessageMessage
 		set thisMessage to replace_chars(thisMessage, "#NAME", item i of phoneticList)
-	
-		set theFileName to defaultFolder & item i of nameList & "_message"
+		
+		set theFileName to item i of nameList & "_message"
 		set theScript to defaultScript
 		set theScript to replace_chars(theScript, "#VOICE", defaultVoice)
 		set theScript to replace_chars(theScript, "#FILENAME", theFileName)
 		set theScript to replace_chars(theScript, "#MESSAGE", thisMessage)
-	
-		do shell script theScript								-- Generates the voice file
-		combineBaseWithVoiceFiles(chosenBaseMessage, theFileName)	-- Generates the ringtone
+		
+		do shell script theScript -- Generates the voice file
+		set theVoiceFile to POSIX file (defaultFolder & theFileName & ".aiff") as alias
+		combineBaseWithVoiceFiles(chosenBaseMessage, theVoiceFile) -- Generates the ringtone
 		
 	end repeat
 end generateVoiceFiles
 
 on setBaseRingtone()
-try
-	set chosenBaseRingtone to choose file with prompt "Choose an audio file to use as your base Ringtone:" of type extension_list without multiple selections allowed
-on error
-	tell application "Finder"
-		set chosenBaseRingtone to (file defaultRingtoneFileName of parentPath) as alias
-	end tell
-end try
+	try
+		set chosenBaseRingtone to choose file with prompt "Choose an audio file to use as your base Ringtone:" of type extension_list without multiple selections allowed
+	on error
+		tell application "Finder"
+			set chosenBaseRingtone to (file defaultRingtoneFileName of parentPath) as alias
+		end tell
+	end try
+	
+	return chosenBaseRingtone
 end setBaseRingtone
 
 on setBaseMessageTone()
-try
-	set chosenBaseMessage to choose file with prompt "Choose an audio file to use as your base Message notification:" of type extension_list without multiple selections allowed
-on error
-	tell application "Finder"
-		set chosenBaseMessage to (file defaultMessageFileName of parentPath) as alias
-	end tell
-end try
+	try
+		set chosenBaseMessage to choose file with prompt "Choose an audio file to use as your base Message notification:" of type extension_list without multiple selections allowed
+	on error
+		tell application "Finder"
+			set chosenBaseMessage to (file defaultMessageFileName of parentPath) as alias
+		end tell
+	end try
+	
+	return chosenBaseMessage
 end setBaseMessageTone
 
 on combineBaseWithVoiceFiles(baseFile, voiceFile)
@@ -172,39 +208,14 @@ on combineBaseWithVoiceFiles(baseFile, voiceFile)
 	if baseFileName ends with baseFileExtension then set baseFileName to (characters 1 thru -((length of baseFileExtension) + 2) of baseFileName) as string -- get rid of the extension so the name is pretty in iTunes
 	tell application "QuickTime Player 7"
 		stop documents -- stop playing any open documents; make sure QT can accurately identify our ringtone add-on
-		open baseFile -- open our ringtone add-on
-		try
-			set baseDocument to document (index of (every window whose name is baseFileName & "." & baseFileExtension)) --  tested against multiple open docs
-		on error
-			try
-				set baseDocument to document (index of (every window whose name is baseFileName)) --  only partially tested; cannot replicate reported problem
-			on error errMSG number errNUM
-				display dialog (errNUM as string) & ": " & errMSG & return & return & ¬
-					"Sorry I must abort this script; there is a problem with the name or extension of the add-on source you chose. ¬
-					Please try another type (kind) of sound source file"
-				return
-			end try
-		end try
+		set baseDocument to open baseFile -- open our ringtone add-on
 		tell baseDocument -- our add-on ringtone sound
 			rewind -- I really shouldn't need to do this, but it will hork the output once in a while without it
 			select all -- if you don't want the whole sample, you'll need to create a custom file with just the bit you want
 			copy -- get what we need
 			select none -- so the file is reset properly for export and to prevent arbitrary system event overwrite
 		end tell
-		open voiceFile -- open the spoken name file we created
-		tell application "System Events" to set {voiceFileName, voiceFileExt} to {name, name extension} of voiceFile -- does this file use an extension in its name?
-		try
-			set voiceDocument to document (index of (every window whose name is voiceFileName & "." & baseFileExtension)) --  tested against multiple open docs
-		on error
-			try
-				set voiceDocument to document (index of (every window whose name is voiceFileName)) --  only partially tested; cannot replicate reported problem
-			on error errMSG number errNUM
-				display dialog (errNUM as string) & ": " & errMSG & return & return & ¬
-					"Sorry I must abort this script; there is a problem with the name or extension of the add-on source you chose. ¬
-					Please try another type (kind) of sound source file"
-				return
-			end try
-		end try
+		set voiceDocument to open voiceFile -- open the spoken name file we created
 		set outputPath to POSIX path of voiceFile & ".m4r" -- this is the magic trick to turn regular AAC/MPEG4 into a ringtone
 		tell voiceDocument -- our spoken name file
 			select none -- avoids occasional unknown source error
@@ -514,5 +525,5 @@ on setHigh()
 	</dict>
 </array>
 </plist>
-
+"
 end setHigh
