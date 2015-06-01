@@ -8,6 +8,7 @@ Add to iTunes
 *)
 
 on run
+	setProgramDefaults
 	getContactNames
 	setDefaultRingtoneMessage
 	setDefaultiMessageMessage
@@ -18,6 +19,16 @@ on run
 	combineBaseMessageToneWithMessageVoiceFiles
 	addToiTunes
 end run
+
+(*
+	This is where we store the defaults used by the program
+*)
+on setProgramDefaults()
+	set defaultRingtoneMessage to "It's #NAME calling"
+	set defaultiMessageMessage to "You've got a message from #NAME"
+	set defaultScript to "say -v #VOICE -o #FILENAME.aiff \"#MESSAGE\""
+	set defaultVoice to "Karen"
+end setProgramDefaults
 
 (*
 	Get contact names from Contacts.
@@ -51,7 +62,15 @@ on getContactNames()
 							set sayName to "Your " & phonetic first name
 						end if
 					else
-						set theName to name
+						set firstName to ""
+						set lastName to ""
+						if first name is not misssing value then
+							set firstName to first name
+						end if
+						if last name is not misssing value then
+							set lastName to last name
+						end if
+						set theName to first name & last name
 						set sayName to name
 						if nickname is not missing value then
 							set sayName to nickname
@@ -70,14 +89,40 @@ on getContactNames()
 	end tell
 end getContactNames
 
-
 on setDefaultRingtoneMessage()
+	display dialog "Enter your ringtone message:" default answer defaultRingtoneMessage
+	set ringtoneMessage to the text returned of the result
 end setDefaultRingtoneMessage
 
 on setDefaultiMessageMessage()
+	display dialog "Enter your iMessage message:" default answer defaultiMessageMessage
+	set iMessageMessage to the text returned of the result
 end setDefaultiMessageMessage
 
 on generateVoiceFiles()
+	repeat with i from 1 to the count of nameList
+		-- Ringtone
+		set thisMessage to defaultRingtoneMessage
+		set thisMessage to replace_chars(thisMessage, "#NAME", item i of phoneticList)
+	
+		set theScript to defaultScript
+		set theScript to replace_chars(theScript, "#VOICE", defaultVoice)
+		set theScript to replace_chars(theScript, "#FILENAME", item i of nameList & "_ringtone")
+		set theScript to replace_chars(theScript, "#MESSAGE", thisMessage)
+	
+		do shell script theScript
+	
+		-- Message
+		set thisMessage to defaultiMessageMessage
+		set thisMessage to replace_chars(thisMessage, "#NAME", item i of phoneticList)
+	
+		set theScript to defaultScript
+		set theScript to replace_chars(theScript, "#VOICE", defaultVoice)
+		set theScript to replace_chars(theScript, "#FILENAME", item i of nameList & "_message")
+		set theScript to replace_chars(theScript, "#MESSAGE", thisMessage)
+	
+		do shell script theScript	
+	end repeat
 end generateVoiceFiles
 
 on setBaseRingtone()
