@@ -101,19 +101,12 @@ on getContactNames()
 							set theName to name
 						end if
 						set sayName to theName
+						set theName to my fixFileNames(theName)
 						if phonetic first name of thePerson is not missing value then
 							set sayName to "Your " & phonetic first name
 						end if
 					else
-						set firstName to ""
-						set lastName to ""
-						if first name is not missing value then
-							set firstName to first name
-						end if
-						if last name is not missing value then
-							set lastName to last name
-						end if
-						set theName to first name & last name
+						set theName to my fixFileNames(name)
 						set sayName to name
 						if nickname is not missing value then
 							set sayName to nickname
@@ -132,6 +125,8 @@ on getContactNames()
 	end tell
 	
 	return {nameList, phoneticList}
+	get nameList
+	get phoneticList
 end getContactNames
 
 on setDefaultRingtoneMessage(defaultRingtoneMessage)
@@ -150,13 +145,13 @@ on generateVoiceFiles(nameList, phoneticList, defaultRingtoneMessage, defaultiMe
 	repeat with i from 1 to the count of nameList
 		-- Ringtone
 		set thisMessage to defaultRingtoneMessage
-		set thisMessage to replace_chars(thisMessage, "#NAME", item i of phoneticList)
+		set thisMessage to replaceChars(thisMessage, "#NAME", item i of phoneticList)
 		
 		set theFileName to item i of nameList & "_ringtone"
 		set theScript to defaultScript
-		set theScript to replace_chars(theScript, "#VOICE", defaultVoice)
-		set theScript to replace_chars(theScript, "#FILENAME", theFileName)
-		set theScript to replace_chars(theScript, "#MESSAGE", thisMessage)
+		set theScript to replaceChars(theScript, "#VOICE", defaultVoice)
+		set theScript to replaceChars(theScript, "#FILENAME", theFileName)
+		set theScript to replaceChars(theScript, "#MESSAGE", thisMessage)
 		
 		do shell script theScript -- Generates the voice file
 		set theVoiceFile to POSIX file (defaultFolder & theFileName & ".aiff") as alias
@@ -164,13 +159,13 @@ on generateVoiceFiles(nameList, phoneticList, defaultRingtoneMessage, defaultiMe
 		
 		-- Message
 		set thisMessage to defaultiMessageMessage
-		set thisMessage to replace_chars(thisMessage, "#NAME", item i of phoneticList)
+		set thisMessage to replaceChars(thisMessage, "#NAME", item i of phoneticList)
 		
 		set theFileName to item i of nameList & "_message"
 		set theScript to defaultScript
-		set theScript to replace_chars(theScript, "#VOICE", defaultVoice)
-		set theScript to replace_chars(theScript, "#FILENAME", theFileName)
-		set theScript to replace_chars(theScript, "#MESSAGE", thisMessage)
+		set theScript to replaceChars(theScript, "#VOICE", defaultVoice)
+		set theScript to replaceChars(theScript, "#FILENAME", theFileName)
+		set theScript to replaceChars(theScript, "#MESSAGE", thisMessage)
 		
 		do shell script theScript -- Generates the voice file
 		set theVoiceFile to POSIX file (defaultFolder & theFileName & ".aiff") as alias
@@ -216,9 +211,9 @@ on combineBaseWithVoiceFiles(baseFile, voiceFile)
 			select none -- so the file is reset properly for export and to prevent arbitrary system event overwrite
 		end tell
 		set voiceDocument to open voiceFile -- open the spoken name file we created
---		
--- To Do: fix output path so files end up in Ringtones folder in iTunes
--- 		
+		--		
+		-- To Do: fix output path so files end up in Ringtones folder in iTunes
+		-- 		
 		set outputPath to POSIX path of voiceFile & ".m4r" -- this is the magic trick to turn regular AAC/MPEG4 into a ringtone
 		tell voiceDocument -- our spoken name file
 			select none -- avoids occasional unknown source error
@@ -248,14 +243,23 @@ on exportAAC(voiceDocument, outputPath)
 	end tell
 end exportAAC
 
-on replace_chars(this_text, search_string, replacement_string)
-	set AppleScript's text item delimiters to the search_string
-	set the item_list to every text item of this_text
-	set AppleScript's text item delimiters to the replacement_string
-	set this_text to the item_list as string
+on fixFileNames(fileName)
+	set badCharList to {" ", "/", "&", "'"}
+	repeat with i from 1 to count of badCharList
+		set replaceItem to item i of badCharList
+		set fileName to replaceChars(fileName, replaceItem, "")
+	end repeat
+	return fileName
+end fixFileNames
+
+on replaceChars(thisText, searchString, replacementString)
+	set AppleScript's text item delimiters to the searchString
+	set the itemList to every text item of thisText
+	set AppleScript's text item delimiters to the replacementString
+	set thisText to the itemList as string
 	set AppleScript's text item delimiters to ""
-	return this_text
-end replace_chars
+	return thisText
+end replaceChars
 
 on cleanup()
 	-- To Do
